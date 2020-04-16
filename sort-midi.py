@@ -1,6 +1,6 @@
 #!/usr/local/bin/python3.7
 
-# Sort midi files in the src directory into folders in dest_dir corresponding to the number of tracks in the file
+# Sort midi files in the src directory into folders in dest_dir corresponding to the number of tracks and their programs
 
 import pretty_midi
 import os
@@ -11,6 +11,7 @@ src_dir  = "/home/david/2020-maitrise/inf8225/project/datasets/bach/"
 dest_dir = "/home/david/2020-maitrise/inf8225/project/datasets/sorted-test"
 midi_files = []
 n_instr = 0
+dirname = ""
 
 # Recursively find all midi files in the source directory
 for root, dirs, files in os.walk(src_dir):
@@ -19,9 +20,16 @@ for root, dirs, files in os.walk(src_dir):
 			try:
 				file_path = os.path.join(root, file)
 				midi = pretty_midi.PrettyMIDI( file_path )
-				n_instr = len(midi.instruments)
-				midi_files.append([file_path, n_instr])
-			except:
+				n_instr = str(len(midi.instruments))
+				programs = []
+				for instr in midi.instruments:
+					programs.append(instr.program)
+				programs_str = '-'.join([str(n) for n in programs])
+				midi_files.append([file_path, n_instr+"_"+programs_str])
+			# malformed midi files
+			except IOError as e:
+				print("  Skipped: error on " + file_path)
+			except EOFError as e:
 				print("  Skipped: error on " + file_path)
 
 midi_bins = {}
@@ -40,7 +48,9 @@ for file in midi_files:
 print( "Found " + str(len(midi_bins)) + " different numbers of instruments" )
 
 for a_bin in midi_bins:
-	print()
-	os.mkdir(dest_dir+"/"+str(a_bin))
+	try:
+		os.mkdir(dest_dir+"/"+str(a_bin))
+	except FileExistsError as e:
+		pass
 	for file in midi_bins[a_bin]:
 		copyfile(file, dest_dir+"/"+str(a_bin)+"/"+ntpath.basename(file))
