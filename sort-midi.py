@@ -23,8 +23,11 @@ for root, dirs, files in os.walk(src_dir):
 				n_instr = str(len(midi.instruments))
 				programs = []
 				for instr in midi.instruments:
-					programs.append(instr.program)
-				programs_str = '-'.join([str(n) for n in programs])
+					if instr.is_drum is True:
+						programs.append(str(instr.program)+"D")
+					else:
+						programs.append(str(instr.program))
+				programs_str = '-'.join(programs)
 				midi_files.append([file_path, n_instr+"_"+programs_str])
 			# malformed midi files
 			except IOError as e:
