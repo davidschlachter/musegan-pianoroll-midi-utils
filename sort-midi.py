@@ -83,6 +83,8 @@ def sort_midi(src_dir, dest_dir):
 			os.mkdir(dest_dir+"/"+str(a_bin))
 		except FileExistsError as e:
 			pass
+		except OSError:
+				print("  Skipped a directory, file name too long?")
 		for file in midi_bins[a_bin]:
 			try:
 				copyfile(file, dest_dir+"/"+str(a_bin)+"/"+ntpath.basename(file))
