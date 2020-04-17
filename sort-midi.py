@@ -23,7 +23,11 @@ def main(argv):
 	else:
 		sort_midi(argv[1], argv[2])
 
-def process_file(file_path):
+def process_file(input):
+	file_path = input[0]
+	dest_dir  = input[1]
+	file = []
+	# Get instrumentation
 	try:
 		midi = pretty_midi.PrettyMIDI( file_path )
 		n_instr = str(len(midi.instruments))
@@ -34,10 +38,23 @@ def process_file(file_path):
 			else:
 				programs.append(str(instr.program))
 		programs_str = '-'.join(programs)
-		return [file_path, n_instr+"_"+programs_str]
-	# malformed midi files
-	except:
+		file.append(file_path)
+		file.append(n_instr+"_"+programs_str)
+	except: # Malformed midi files
 		print("  Skipped: error on " + file_path)
+		return
+	# Ensure dest_dir subdirectory exists
+	try:
+		os.mkdir( dest_dir+"/"+file[1] )
+	except FileExistsError as e:
+		pass
+	except OSError:
+		print("  Skipped a directory, file name too long?")
+	# Copy to bin
+	try:
+		copyfile(file[0], dest_dir+"/"+file[1]+"/"+ntpath.basename(file[0]))
+	except OSError:
+		print("  Skipped a directory, file name too long?")
 
 def sort_midi(src_dir, dest_dir):
 	file_list = []
@@ -49,47 +66,16 @@ def sort_midi(src_dir, dest_dir):
 	for root, dirs, files in os.walk(src_dir):
 		for file in files:
 			if file.endswith(".mid"):
-				file_list.append(os.path.join(root, file))
-				
+				file_list.append([os.path.join(root, file), dest_dir])
+	
+	if len(file_list) is 0:
+		raise NoMIDI("Error: no MIDI files could be read. Exiting...")
+
 	# Reading MIDI files is CPU-intensive
 	pool = mp.Pool(mp.cpu_count())
 	midi_files = pool.map(process_file, [file for file in file_list])
 	pool.close()
 
-	if len(midi_files) is 0:
-		raise NoMIDI("Error: no MIDI files could be read. Exiting...")
-
-	midi_bins = {}
-
-	# First mode: just separate by number of tracks
-	i = 0
-	for file in midi_files:
-		try:
-			i = file[1]
-			midi_bins[i].append(file[0])
-		except TypeError:
-			print("  Skipping a file, TypeError on "+str(file))
-		except KeyError:
-			midi_bins[i] = []
-			i = file[1]
-			midi_bins[i].append(file[0])
-		except:
-			print("  Skipping a file, exception raised.")
-
-	print( "Found " + str(len(midi_bins)) + " different numbers of instruments" )
-
-	for a_bin in midi_bins:
-		try:
-			os.mkdir(dest_dir+"/"+str(a_bin))
-		except FileExistsError as e:
-			pass
-		except OSError:
-				print("  Skipped a directory, file name too long?")
-		for file in midi_bins[a_bin]:
-			try:
-				copyfile(file, dest_dir+"/"+str(a_bin)+"/"+ntpath.basename(file))
-			except OSError:
-				print("  Skipped a directory, file name too long?")
 
 if __name__ == "__main__":
 	# execute only if run as a script
