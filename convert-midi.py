@@ -17,11 +17,19 @@ def main(argv):
 		convert_midi(argv[1], argv[2])
 
 def convert_file(file):
-	midi = pypianoroll.parse(file[0])
-	pypianoroll.save( file[1]+"/"+ntpath.basename(file[0]), midi )
+	try:
+		midi = pypianoroll.parse(file[0])
+		pypianoroll.save( file[1]+"/"+ntpath.basename(file[0]), midi )
+	except:
+		print("  Error, skipping "+str(file))
 
 def convert_midi(src_dir, dest_dir):
 	file_list = []
+
+	try:
+		os.mkdir( dest_dir )
+	except FileExistsError as e:
+		pass
 
 	# Recursively find all midi files in the source directory
 	for root, dirs, files in os.walk(src_dir):

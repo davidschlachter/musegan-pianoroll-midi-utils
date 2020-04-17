@@ -45,6 +45,10 @@ def process_file(input):
 		return
 	# Ensure dest_dir subdirectory exists
 	try:
+		os.mkdir( dest_dir )
+	except FileExistsError as e:
+		pass
+	try:
 		os.mkdir( dest_dir+"/"+file[1] )
 	except FileExistsError as e:
 		pass
