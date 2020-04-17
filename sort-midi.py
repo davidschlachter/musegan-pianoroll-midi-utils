@@ -50,11 +50,13 @@ def process_file(input):
 		pass
 	except OSError:
 		print("  Skipped a directory, file name too long?")
+		pass
 	# Copy to bin
 	try:
 		copyfile(file[0], dest_dir+"/"+file[1]+"/"+ntpath.basename(file[0]))
 	except OSError:
 		print("  Skipped a directory, file name too long?")
+		pass
 
 def sort_midi(src_dir, dest_dir):
 	file_list = []
@@ -68,12 +70,15 @@ def sort_midi(src_dir, dest_dir):
 			if file.endswith(".mid"):
 				file_list.append([os.path.join(root, file), dest_dir])
 	
-	if len(file_list) is 0:
+	n_files = len(file_list)
+	if n_files is 0:
 		raise NoMIDI("Error: no MIDI files could be read. Exiting...")
 
 	# Reading MIDI files is CPU-intensive
 	pool = mp.Pool(mp.cpu_count())
-	midi_files = pool.map(process_file, [file for file in file_list])
+	#midi_files = pool.imap(process_file, [file for file in file_list], n_files / 100)
+	for i, _ in enumerate(pool.imap(process_file, [file for file in file_list], int(n_files / 100)) , 1):
+		sys.stderr.write('\rdone {0:.2%}'.format(i/n_files))
 	pool.close()
 
 
